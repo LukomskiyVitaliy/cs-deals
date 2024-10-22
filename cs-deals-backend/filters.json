@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "itemName": "Abyss Hunting Bow",
+    "minPrice": 1.47,
+    "maxPrice": 56,
+    "minDiscount": 0,
+    "active": true,
+    "amount": 5
+  }
+]
