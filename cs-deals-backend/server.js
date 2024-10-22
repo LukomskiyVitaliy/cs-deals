@@ -112,6 +112,9 @@ app.get('/api/toggleShoppingOff', (req, res) => __awaiter(void 0, void 0, void 0
     service.stopLoop();
     res.sendStatus(200);
 }));
+app.get('/api/getServiceActiveFilters', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    res.json(service.getFilters()); // Відправляємо клієнту відфільтровані дані
+}));
 app.get('*', (req, res) => {
     res.sendFile(path_1.default.join(__dirname, './dist/index.html'));
 });

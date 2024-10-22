@@ -46,6 +46,9 @@ class CsDealsSevice {
             }
         });
     }
+    getFilters() {
+        return this.filters;
+    }
     startLoop() {
         if (!this.isBuying) {
             this.isBuying = true;
@@ -88,6 +91,7 @@ class CsDealsSevice {
                         filter.amount > 0;
                 });
             });
+            console.log(csDealsItems);
             for (const item of csDealsItems) {
                 yield this.buyItem(item);
             }
@@ -139,7 +143,7 @@ class CsDealsSevice {
     searchItem(item) {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.page) {
-                yield this.page.goto(encodeURI(`https://cs.deals/ru/market/rust/?min_price=${(item.lowest_price - 0.2).toString()}&max_price=${(item.lowest_price + 0.2).toString()}&name=${(item.marketname.trim())}&sort=price&sort_desc=1`));
+                yield this.page.goto(encodeURI(`https://cs.deals/ru/market/rust/?&max_price=${(item.lowest_price).toString()}&name=${(item.marketname.trim())}&sort=price`));
             }
         });
     }
@@ -150,12 +154,14 @@ class CsDealsSevice {
                 // const response = await this.page.waitForResponse(response =>
                 //     response.url() === 'https://cs.deals/ru/ajax/marketplace-search' && response.status() === 200
                 // );
-                const itemCard = yield this.page.waitForSelector('.item', { timeout: 5000, state: 'visible' });
-                if (!itemCard) {
+                try {
+                    const itemCard = yield this.page.waitForSelector('.item', { timeout: 5000, state: 'visible' });
+                    yield itemCard.click();
+                }
+                catch (_a) {
                     console.log("Предмет не було знайдено");
                     return actualAmount;
                 }
-                yield itemCard.click();
                 const amountFrame = yield this.page.$('.add-to-cart-amount');
                 const filter = this.filters.find(filter => filter.itemName === item.marketname);
                 if (amountFrame && filter) {
@@ -185,7 +191,8 @@ class CsDealsSevice {
                 const buyButton = yield this.page.$('.fab.fa-bitcoin');
                 if (!buyButton) {
                     console.log('Неавторизований на сайті. Будь ласка авторизуйтеся');
-                    yield this.page.click('#cart-clear');
+                    const clearCartBtn = yield this.page.waitForSelector('#cart-clear', { timeout: 5000, state: 'visible' });
+                    yield clearCartBtn.click();
                     return false;
                 }
                 yield buyButton.click();

@@ -1,6 +1,7 @@
 import { chromium, Browser, Page } from 'playwright';
 import { ItemFilter, CsDealsItem, LootFarmItem } from './interface';
 import axios from 'axios'
+import WebSocket from 'ws';
 
 export class CsDealsSevice {
     private browser: Browser | null = null;  // Збереження стану браузера
@@ -32,6 +33,10 @@ export class CsDealsSevice {
         if (this.browser) {
             await this.browser.close();
         }
+    }
+
+    public getFilters(): ItemFilter[] {
+        return this.filters;
     }
 
     public startLoop(): void {
@@ -74,6 +79,7 @@ export class CsDealsSevice {
                     filter.amount > 0
             })
         });
+        console.log(csDealsItems);
         for (const item of csDealsItems) {
             await this.buyItem(item);
         }
@@ -125,7 +131,7 @@ export class CsDealsSevice {
 
     async searchItem(item: CsDealsItem) {
         if (this.page) {
-            await this.page.goto(encodeURI(`https://cs.deals/ru/market/rust/?min_price=${(item.lowest_price - 0.2).toString()}&max_price=${(item.lowest_price + 0.2).toString()}&name=${(item.marketname.trim())}&sort=price&sort_desc=1`))
+            await this.page.goto(encodeURI(`https://cs.deals/ru/market/rust/?&max_price=${(item.lowest_price).toString()}&name=${(item.marketname.trim())}&sort=price`))
         }
     }
 
@@ -135,13 +141,16 @@ export class CsDealsSevice {
             // const response = await this.page.waitForResponse(response =>
             //     response.url() === 'https://cs.deals/ru/ajax/marketplace-search' && response.status() === 200
             // );
-            const itemCard = await this.page.waitForSelector('.item', { timeout: 5000, state: 'visible' });
-            if (!itemCard) {
+            try {
+                const itemCard = await this.page.waitForSelector('.item', { timeout: 5000, state: 'visible' });
+                await itemCard.click();
+            }
+
+            catch {
                 console.log("Предмет не було знайдено");
                 return actualAmount;
             }
 
-            await itemCard.click();
             const amountFrame = await this.page.$('.add-to-cart-amount');
             const filter = this.filters.find(filter => filter.itemName === item.marketname);
 
@@ -174,7 +183,8 @@ export class CsDealsSevice {
             const buyButton = await this.page.$('.fab.fa-bitcoin');
             if (!buyButton) {
                 console.log('Неавторизований на сайті. Будь ласка авторизуйтеся');
-                await this.page.click('#cart-clear');
+                const clearCartBtn = await this.page.waitForSelector('#cart-clear', { timeout: 5000, state: 'visible' });
+                await clearCartBtn.click();
                 return false;
             }
 

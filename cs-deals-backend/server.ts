@@ -94,6 +94,11 @@ app.get('/api/toggleShoppingOff', async (req: Request, res: Response) => {
 
 });
 
+app.get('/api/getServiceActiveFilters', async (req: Request, res: Response) => {
+    res.json(service.getFilters()); // Відправляємо клієнту відфільтровані дані
+
+});
+
 
 app.get('*', (req: Request, res: Response) => {
     res.sendFile(path.join(__dirname, './dist/index.html'));
