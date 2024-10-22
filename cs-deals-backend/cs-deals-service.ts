@@ -9,6 +9,7 @@ export class CsDealsSevice {
     private filters: ItemFilter[] = [];
     private isBuying: boolean = false;
     private intervalId: NodeJS.Timeout | null = null;
+    private isRunning: boolean = false;
 
     constructor() {
         this.initBrowser();
@@ -36,9 +37,16 @@ export class CsDealsSevice {
     public startLoop(): void {
         if (!this.isBuying) {
             this.isBuying = true;
-            this.intervalId = setInterval(() => {
-                this.monitor();
-            }, 5000); // Виконувати код кожні 5 секунд
+            this.intervalId = setInterval(async () => {
+                if (!this.isRunning) { // перевіряємо, чи monitor не виконується
+                    this.isRunning = true; // блокуємо новий виклик поки поточний не завершився
+                    try {
+                        await this.monitor(); // викликаємо monitor і чекаємо його завершення
+                    } finally {
+                        this.isRunning = false; // розблоковуємо після завершення
+                    }
+                }
+            }, 10000); // Виконувати код кожні 10 секунд
             console.log('Почали покупки.');
         } else {
             console.log('Вже купляємо.');
@@ -62,7 +70,8 @@ export class CsDealsSevice {
         const csDealsItems = (await this.getCsDealsItems()).filter(item => {
             return this.filters.some(filter => {
                 return item.marketname == filter.itemName &&
-                    item.lowest_price <= filter.maxPrice
+                    item.lowest_price <= filter.maxPrice &&
+                    filter.amount > 0
             })
         });
         for (const item of csDealsItems) {
@@ -123,13 +132,13 @@ export class CsDealsSevice {
     async addItemToCart(item: CsDealsItem) {
         let actualAmount = 0;
         if (this.page) {
-            const response = await this.page.waitForResponse(response =>
-                response.url() === 'https://cs.deals/ru/ajax/marketplace-search' && response.status() === 200
-            );
+            // const response = await this.page.waitForResponse(response =>
+            //     response.url() === 'https://cs.deals/ru/ajax/marketplace-search' && response.status() === 200
+            // );
             const itemCard = await this.page.waitForSelector('.item', { timeout: 5000, state: 'visible' });
             if (!itemCard) {
                 console.log("Предмет не було знайдено");
-                return 0;
+                return actualAmount;
             }
 
             await itemCard.click();
@@ -165,6 +174,7 @@ export class CsDealsSevice {
             const buyButton = await this.page.$('.fab.fa-bitcoin');
             if (!buyButton) {
                 console.log('Неавторизований на сайті. Будь ласка авторизуйтеся');
+                await this.page.click('#cart-clear');
                 return false;
             }
 

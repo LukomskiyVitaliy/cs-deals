@@ -23,6 +23,7 @@ class CsDealsSevice {
         this.filters = [];
         this.isBuying = false;
         this.intervalId = null;
+        this.isRunning = false;
         this.initBrowser();
     }
     // Метод для запуску браузера і переходу на сторінку
@@ -48,9 +49,17 @@ class CsDealsSevice {
     startLoop() {
         if (!this.isBuying) {
             this.isBuying = true;
-            this.intervalId = setInterval(() => {
-                this.monitor();
-            }, 5000); // Виконувати код кожні 5 секунд
+            this.intervalId = setInterval(() => __awaiter(this, void 0, void 0, function* () {
+                if (!this.isRunning) { // перевіряємо, чи monitor не виконується
+                    this.isRunning = true; // блокуємо новий виклик поки поточний не завершився
+                    try {
+                        yield this.monitor(); // викликаємо monitor і чекаємо його завершення
+                    }
+                    finally {
+                        this.isRunning = false; // розблоковуємо після завершення
+                    }
+                }
+            }), 10000); // Виконувати код кожні 10 секунд
             console.log('Почали покупки.');
         }
         else {
@@ -75,7 +84,8 @@ class CsDealsSevice {
             const csDealsItems = (yield this.getCsDealsItems()).filter(item => {
                 return this.filters.some(filter => {
                     return item.marketname == filter.itemName &&
-                        item.lowest_price <= filter.maxPrice;
+                        item.lowest_price <= filter.maxPrice &&
+                        filter.amount > 0;
                 });
             });
             for (const item of csDealsItems) {
@@ -137,11 +147,13 @@ class CsDealsSevice {
         return __awaiter(this, void 0, void 0, function* () {
             let actualAmount = 0;
             if (this.page) {
-                const response = yield this.page.waitForResponse(response => response.url() === 'https://cs.deals/ru/ajax/marketplace-search' && response.status() === 200);
+                // const response = await this.page.waitForResponse(response =>
+                //     response.url() === 'https://cs.deals/ru/ajax/marketplace-search' && response.status() === 200
+                // );
                 const itemCard = yield this.page.waitForSelector('.item', { timeout: 5000, state: 'visible' });
                 if (!itemCard) {
                     console.log("Предмет не було знайдено");
-                    return 0;
+                    return actualAmount;
                 }
                 yield itemCard.click();
                 const amountFrame = yield this.page.$('.add-to-cart-amount');
@@ -173,6 +185,7 @@ class CsDealsSevice {
                 const buyButton = yield this.page.$('.fab.fa-bitcoin');
                 if (!buyButton) {
                     console.log('Неавторизований на сайті. Будь ласка авторизуйтеся');
+                    yield this.page.click('#cart-clear');
                     return false;
                 }
                 yield buyButton.click();

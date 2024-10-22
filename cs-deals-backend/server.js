@@ -41,6 +41,7 @@ const cors_1 = __importDefault(require("cors"));
 const cs_deals_service_1 = require("./cs-deals-service");
 const fs = __importStar(require("fs"));
 const path_1 = __importDefault(require("path"));
+const readline = __importStar(require("readline"));
 const app = (0, express_1.default)();
 const PORT = 3000;
 const FILEPATH = './filters.json';
@@ -117,6 +118,13 @@ app.get('*', (req, res) => {
 // Слухаємо на порту
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+});
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+rl.question('Press any key to exit...\n', () => {
+    rl.close();
 });
 // Додаємо мапінг для LootFarmItem, якщо потрібно
 function mapLootFarmItemtoItemFilter(item) {
