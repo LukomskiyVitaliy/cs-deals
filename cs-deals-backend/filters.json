@@ -1,18 +1,1 @@
-[
-  {
-    "itemName": "Abyss Hunting Bow",
-    "minPrice": 1.47,
-    "maxPrice": 56,
-    "minDiscount": 0,
-    "active": true,
-    "amount": 5
-  },
-  {
-    "itemName": "Shard of True Ice",
-    "minPrice": 51.14,
-    "maxPrice": 60,
-    "minDiscount": 0,
-    "active": true,
-    "amount": 1
-  }
-]
+[]

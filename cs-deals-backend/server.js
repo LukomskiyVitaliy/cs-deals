@@ -90,7 +90,15 @@ app.post('/api/addFilter', (req, res) => __awaiter(void 0, void 0, void 0, funct
         const data = fs.readFileSync(FILEPATH, 'utf8');
         const filters = JSON.parse(data);
         // Додаємо новий фільтр до масиву
-        filters.push(filter);
+        let existingFIlter = filters.find(i => i.itemName == filter.itemName);
+        if (existingFIlter === undefined)
+            filters.push(filter);
+        else {
+            existingFIlter.amount = filter.amount;
+            existingFIlter.maxPrice = filter.maxPrice;
+            existingFIlter.minPrice = filter.minPrice;
+            existingFIlter.minDiscount = filter.minDiscount;
+        }
         // Перезаписуємо файл з оновленим масивом
         fs.writeFileSync(FILEPATH, JSON.stringify(filters, null, 2), 'utf8');
         console.log('Фільтр успішно додано!');
@@ -106,7 +114,9 @@ app.post('/api/deleteFilter', (req, res) => __awaiter(void 0, void 0, void 0, fu
     try {
         ensureFileExists();
         let data = JSON.parse(fs.readFileSync(FILEPATH, 'utf8'));
-        fs.writeFileSync(FILEPATH, JSON.stringify(data.filter(filter => filter.itemName !== filterName), null, 2), 'utf8');
+        if (data.find(i => i.itemName == filterName) !== undefined) {
+            fs.writeFileSync(FILEPATH, JSON.stringify(data.filter(filter => filter.itemName !== filterName), null, 2), 'utf8');
+        }
         res.sendStatus(200);
     }
     catch (err) {

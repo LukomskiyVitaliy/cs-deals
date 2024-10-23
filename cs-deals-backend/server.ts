@@ -69,12 +69,23 @@ app.post('/api/addFilter', async (req: Request, res: Response) => {
         const filters: ItemFilter[] = JSON.parse(data);
 
         // Додаємо новий фільтр до масиву
-        filters.push(filter);
+
+        let existingFIlter = filters.find(i => i.itemName == filter.itemName);
+        if (existingFIlter === undefined)
+            filters.push(filter);
+        else {
+            existingFIlter.amount = filter.amount;
+            existingFIlter.maxPrice = filter.maxPrice;
+            existingFIlter.minPrice = filter.minPrice;
+            existingFIlter.minDiscount = filter.minDiscount;
+        }
 
         // Перезаписуємо файл з оновленим масивом
         fs.writeFileSync(FILEPATH, JSON.stringify(filters, null, 2), 'utf8');
         console.log('Фільтр успішно додано!');
         res.sendStatus(200);
+
+
     } catch (err) {
         console.error('Error writing file:', err);
         res.sendStatus(500);
@@ -86,7 +97,12 @@ app.post('/api/deleteFilter', async (req: Request, res: Response) => {
     try {
         ensureFileExists();
         let data = JSON.parse(fs.readFileSync(FILEPATH, 'utf8')) as ItemFilter[];
-        fs.writeFileSync(FILEPATH, JSON.stringify(data.filter(filter => filter.itemName !== filterName), null, 2), 'utf8');
+        if (data.find(i => i.itemName == filterName) !== undefined) {
+            fs.writeFileSync(FILEPATH, JSON.stringify(data.filter(filter => filter.itemName !== filterName), null, 2), 'utf8');
+
+        }
+
+
         res.sendStatus(200);
     } catch (err) {
         console.error('Error writing file:', err);
