@@ -63,13 +63,19 @@ app.get('/api/csdeals', (req, res) => __awaiter(void 0, void 0, void 0, function
     }
 }));
 app.get('/api/getFilters', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield axios_1.default.get('https://loot.farm/fullpriceRUST.json');
-    const lootFarmItems = response.data;
-    // Мапимо кожен елемент (можна додати свою логіку)
-    const filters = lootFarmItems.map(item => mapLootFarmItemtoItemFilter(item));
-    ensureFileExists();
-    const data = fs.readFileSync(FILEPATH, 'utf8');
-    res.json(filters.concat(JSON.parse(data))); // Відправляємо клієнту відфільтровані дані
+    try {
+        const response = yield axios_1.default.get('https://loot.farm/fullpriceRUST.json');
+        const lootFarmItems = response.data;
+        // Мапимо кожен елемент (можна додати свою логіку)
+        const filters = lootFarmItems.map(item => mapLootFarmItemtoItemFilter(item));
+        ensureFileExists();
+        const data = fs.readFileSync(FILEPATH, 'utf8');
+        res.json(filters.concat(JSON.parse(data))); // Відправляємо клієнту відфільтровані дані
+    }
+    catch (error) {
+        console.error('Error fetching CSDeals items:', error);
+        res.status(500).json({ error: 'Error fetching LootFarm items' });
+    }
 }));
 app.post('/api/toggleShoppingOn', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const filters = req.body.filters;

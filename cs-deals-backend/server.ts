@@ -36,15 +36,21 @@ app.get('/api/csdeals', async (req: Request, res: Response) => {
 });
 
 app.get('/api/getFilters', async (req: Request, res: Response) => {
-    const response = await axios.get<LootFarmItem[]>('https://loot.farm/fullpriceRUST.json');
-    const lootFarmItems: LootFarmItem[] = response.data;
-    // Мапимо кожен елемент (можна додати свою логіку)
-    const filters = lootFarmItems.map(item => mapLootFarmItemtoItemFilter(item));
-    ensureFileExists();
-    const data = fs.readFileSync(FILEPATH, 'utf8');
+    try {
+        const response = await axios.get<LootFarmItem[]>('https://loot.farm/fullpriceRUST.json');
+        const lootFarmItems: LootFarmItem[] = response.data;
+        // Мапимо кожен елемент (можна додати свою логіку)
+        const filters = lootFarmItems.map(item => mapLootFarmItemtoItemFilter(item));
+        ensureFileExists();
+        const data = fs.readFileSync(FILEPATH, 'utf8');
 
 
-    res.json(filters.concat(JSON.parse(data) as ItemFilter[])); // Відправляємо клієнту відфільтровані дані
+        res.json(filters.concat(JSON.parse(data) as ItemFilter[])); // Відправляємо клієнту відфільтровані дані
+    }
+    catch (error) {
+        console.error('Error fetching CSDeals items:', error);
+        res.status(500).json({ error: 'Error fetching LootFarm items' });
+    }
 
 });
 

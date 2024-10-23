@@ -206,7 +206,14 @@ export class CsDealsSevice {
     }
 
     private async getCsDealsItems(): Promise<CsDealsItem[]> {
-        const response = await axios.get('https://cs.deals/API/IPricing/GetLowestPrices/v1?appid=252490');
-        return response.data.response.items;
+        try {
+            const response = await axios.get('https://cs.deals/API/IPricing/GetLowestPrices/v1?appid=252490');
+            return response.data.response.items;
+        }
+        catch {
+            console.log("CS DEALS не доступне")
+        }
+        return [];
+
     }
 }

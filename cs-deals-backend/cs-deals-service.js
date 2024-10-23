@@ -212,8 +212,14 @@ class CsDealsSevice {
     }
     getCsDealsItems() {
         return __awaiter(this, void 0, void 0, function* () {
-            const response = yield axios_1.default.get('https://cs.deals/API/IPricing/GetLowestPrices/v1?appid=252490');
-            return response.data.response.items;
+            try {
+                const response = yield axios_1.default.get('https://cs.deals/API/IPricing/GetLowestPrices/v1?appid=252490');
+                return response.data.response.items;
+            }
+            catch (_a) {
+                console.log("CS DEALS не доступне");
+            }
+            return [];
         });
     }
 }
