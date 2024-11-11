@@ -9,7 +9,7 @@
          <!-- Динамічна форма для введення нового фільтра -->
       <div v-if="showForm" class="form-group">
         <div>
-          <label>Назва предмету:</label>
+        <label>Назва предмету:</label>
           <input type="text" v-model="newFilter.itemName" class="input" placeholder="Назва предмету" />
         </div>
 
@@ -24,7 +24,7 @@
         </div>
 
         <div class="form-group">
-          <button @click="saveFilter" class="btn">Зберегти фільтр</button>
+          <button @click="saveFilter(newFilter,true)" class="btn">Зберегти фільтр</button>
         </div>
       </div>
 
@@ -55,12 +55,17 @@
                 {{ shoppingActive ? 'Закінчити покупки' : 'Почати покупки' }}
             </button>
         </div>
+        <div class="form-group">
+            <button @click="saveFilters" class="btn">
+                Зберегти фільтри
+            </button>
+        </div>
     </div>
 
     <!-- ------------------------------------------------- -->
-    <div v-for="(item, index) in filters" :key="index" class="item">
+    <div v-for="(item, index) in filters.sort((a, b) => b.active - a.active)" :key="index" class="item">
         <div class="item-details">
-            <label style="width: 20%">Назва предмету: {{ item.itemName }}</label>
+            <label style="width: 20%">{{ item.itemName }}</label>
             <div v-if="item.active">
                 <label for="maxPrice">Максимальна ціна: </label>
                 <input type="number" v-model.number="item.maxPrice" id="maxPrice" :placeholder="'Максимальна ціна для ' + item.itemName" />
@@ -74,10 +79,6 @@
             <div>
                 <label for="active">Активний: </label>
                 <input type="checkbox" v-model="item.active" id="active" />
-            </div>
-
-            <div>
-                <button @click="removeFilter(item)">Видалити</button>
             </div>
 
         </div>
@@ -120,14 +121,14 @@ export default class HomeView extends Vue {
         amount: 0,
         userCreated: true
     };
-    
+    activeFiltersInterval: number = 0;
 
     mounted() {
       this.getFilters();
     }
 
-     getFilters() {
-      axios.get('http://localhost:3000/api/getFilters')
+     async getFilters() {
+      await axios.get('http://localhost:3000/api/getFilters')
       .then(response => {
         this.filters = response.data;
       })
@@ -139,8 +140,10 @@ export default class HomeView extends Vue {
             await axios.post('http://localhost:3000/api/toggleShoppingOn', {
             filters: activeFilters,
         });
+            this.startPollingActiveFilters();
         } else {
             await axios.get('http://localhost:3000/api/toggleShoppingOff');
+            this.stopPollingActiveFilters();
         }
     }
 
@@ -148,32 +151,68 @@ export default class HomeView extends Vue {
         this.showForm = !this.showForm;
     }
 
-    async saveFilter() {
-        await axios.post('http://localhost:3000/api/addFilter', {
-                filter: this.newFilter,
+    async saveFilter(filter: ItemFilter, isNew: boolean) {
+        const existingFilter = this.filters.find(i => i.itemName === filter.itemName);
+    if (existingFilter) {
+        console.warn(`Фільтр з назвою "${filter.itemName}" вже існує.`);
+        return; // Виходимо, якщо фільтр вже існує
+    }
+        filter.userCreated = true;
+        await axios.post('http://localhost:3000/api/addUserFilter', {
+                filter: filter,
             });
-        this.filters.push({...this.newFilter});
-        this.newFilter = {
-            itemName: '',
-            minPrice: 0,
-            maxPrice: 0,
-            minDiscount: 0,
-            active: true,
-            amount: 0,
-            userCreated: true
-        };
-        this.addFilter();
-        this.getFilters();
+        if (isNew) {
+            this.filters.push({...this.newFilter});
+            this.newFilter = {
+               itemName: '',
+                minPrice: 0,
+                maxPrice: 0,
+                minDiscount: 0,
+                active: true,
+                amount: 0,
+                userCreated: true
+            };
+            this.addFilter();
+            this.getFilters();
+        }  
     }
 
-    async removeFilter(item: ItemFilter) {
-        if (item.userCreated) {
-            await axios.post('http://localhost:3000/api/deleteFilter', {
-                filterName: item.itemName,
-            });
+    async saveFilters() {
+    try {
+        const activeFilters = this.filters.filter(f => f.active && ! f.userCreated);
+        await axios.post('http://localhost:3000/api/saveFilters', {
+            filters: activeFilters,
+        });
+        console.log('Filters saved successfully');
+    } catch (error) {
+        console.error('Error saving filters:', error);
+    }
+}
+
+    async startPollingActiveFilters() {
+        this.activeFiltersInterval = setInterval(async () => {
+            try {
+                const response = await axios.get('http://localhost:3000/api/getServiceActiveFilters');
+                const data: ItemFilter[] = response.data;
+
+                data.forEach(item => {
+                    let filter = this.filters.find(filter => filter.itemName === item.itemName);
+                    
+                    if (filter && item.amount !== undefined) {
+                        filter.amount = item.amount;
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching filters:', error);
+            }
+        }, 10000); // 10 секунд
+    }
+
+    stopPollingActiveFilters() {
+        if (this.activeFiltersInterval) {
+            clearInterval(this.activeFiltersInterval); // зупиняємо опитування
+            this.activeFiltersInterval = 0; // обнуляємо ID таймера
         }
-        this.filters = this.filters.filter(i => i.itemName !== item.itemName);
-        this.getFilters();
     }
 
 }
