@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "itemName": "60's Army Jacket",
+    "minPrice": 14.17,
+    "maxPrice": 14.17,
+    "minDiscount": 0,
+    "active": true,
+    "amount": 4
+  },
+  {
+    "itemName": "Abyss AR",
+    "minPrice": 3.57,
+    "maxPrice": 3.57,
+    "minDiscount": 0,
+    "active": true,
+    "amount": 0
+  },
+  {
+    "itemName": "Abyss Bow",
+    "minPrice": 3.09,
+    "maxPrice": 6,
+    "minDiscount": 0,
+    "active": true,
+    "amount": 2
+  },
+  {
+    "itemName": "Abyss Boots",
+    "minPrice": 2.9,
+    "maxPrice": 2.9,
+    "minDiscount": 0,
+    "active": true,
+    "amount": 1
+  },
+  {
+    "itemName": "8-BIT AR",
+    "minPrice": 1.06,
+    "maxPrice": 2,
+    "minDiscount": 0,
+    "active": true,
+    "amount": 1
+  }
+]

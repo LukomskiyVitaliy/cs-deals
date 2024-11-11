@@ -10,6 +10,7 @@ import * as readline from 'readline';
 const app = express();
 const PORT = 3000;
 const FILEPATH = './filters.json'
+const FILEPATH__USER = './user_filters.json'
 
 let service = new CsDealsSevice();
 
@@ -43,9 +44,10 @@ app.get('/api/getFilters', async (req: Request, res: Response) => {
         const filters = lootFarmItems.map(item => mapLootFarmItemtoItemFilter(item));
         ensureFileExists();
         const data = fs.readFileSync(FILEPATH, 'utf8');
+        const data_user = fs.readFileSync(FILEPATH__USER, 'utf8');
 
 
-        res.json(filters.concat(JSON.parse(data) as ItemFilter[])); // Відправляємо клієнту відфільтровані дані
+        res.json(filters.concat(JSON.parse(data) as ItemFilter[]).concat(JSON.parse(data_user) as ItemFilter[])); // Відправляємо клієнту відфільтровані дані
     }
     catch (error) {
         console.error('Error fetching CSDeals items:', error);
@@ -61,54 +63,55 @@ app.post('/api/toggleShoppingOn', async (req: Request, res: Response) => {
     res.sendStatus(200);
 });
 
-app.post('/api/addFilter', async (req: Request, res: Response) => {
+app.post('/api/saveFilters', async (req: Request, res: Response) => {
+    const filters: ItemFilter[] = req.body.filters;
+    ensureFileExists();
+
+    try {
+        fs.writeFileSync(FILEPATH, JSON.stringify(filters, null, 2), 'utf8');
+        console.log('Filter successfully saved!');
+        res.sendStatus(200);
+    } catch (err) {
+        console.error('Error writing file:', err);
+        res.sendStatus(500);
+    }
+});
+
+app.post('/api/addUserFilter', async (req: Request, res: Response) => {
     const filter: ItemFilter = req.body.filter;
     ensureFileExists();
+
     try {
-        const data = fs.readFileSync(FILEPATH, 'utf8');
+        const data = fs.readFileSync(FILEPATH__USER, 'utf8');
         const filters: ItemFilter[] = JSON.parse(data);
+        filters.push(filter);
 
-        // Додаємо новий фільтр до масиву
-
-        let existingFIlter = filters.find(i => i.itemName == filter.itemName);
-        if (existingFIlter === undefined)
-            filters.push(filter);
-        else {
-            existingFIlter.amount = filter.amount;
-            existingFIlter.maxPrice = filter.maxPrice;
-            existingFIlter.minPrice = filter.minPrice;
-            existingFIlter.minDiscount = filter.minDiscount;
-        }
-
-        // Перезаписуємо файл з оновленим масивом
-        fs.writeFileSync(FILEPATH, JSON.stringify(filters, null, 2), 'utf8');
-        console.log('Фільтр успішно додано!');
-        res.sendStatus(200);
-
-
-    } catch (err) {
-        console.error('Error writing file:', err);
-        res.sendStatus(500);
-    }
-});
-
-app.post('/api/deleteFilter', async (req: Request, res: Response) => {
-    const filterName: string = req.body.filterName;
-    try {
-        ensureFileExists();
-        let data = JSON.parse(fs.readFileSync(FILEPATH, 'utf8')) as ItemFilter[];
-        if (data.find(i => i.itemName == filterName) !== undefined) {
-            fs.writeFileSync(FILEPATH, JSON.stringify(data.filter(filter => filter.itemName !== filterName), null, 2), 'utf8');
-
-        }
-
-
+        fs.writeFileSync(FILEPATH__USER, JSON.stringify(filters, null, 2), 'utf8');
+        console.log('User Filter successfully saved!');
         res.sendStatus(200);
     } catch (err) {
         console.error('Error writing file:', err);
         res.sendStatus(500);
     }
 });
+
+// app.post('/api/deleteFilter', async (req: Request, res: Response) => {
+//     const filterName: string = req.body.filterName;
+//     try {
+//         ensureFileExists();
+//         let data = JSON.parse(fs.readFileSync(FILEPATH, 'utf8')) as ItemFilter[];
+//         if (data.find(i => i.itemName == filterName) !== undefined) {
+//             fs.writeFileSync(FILEPATH, JSON.stringify(data.filter(filter => filter.itemName !== filterName), null, 2), 'utf8');
+
+//         }
+
+
+//         res.sendStatus(200);
+//     } catch (err) {
+//         console.error('Error writing file:', err);
+//         res.sendStatus(500);
+//     }
+// });
 
 app.get('/api/toggleShoppingOff', async (req: Request, res: Response) => {
     service.stopLoop();
@@ -156,6 +159,10 @@ function ensureFileExists(): void {
     if (!fs.existsSync(FILEPATH)) {
         fs.writeFileSync(FILEPATH, '[]', 'utf8');  // Create the file with an empty array
         console.log('File created:', FILEPATH);
+    }
+    if (!fs.existsSync(FILEPATH__USER)) {
+        fs.writeFileSync(FILEPATH__USER, '[]', 'utf8');  // Create the file with an empty array
+        console.log('File created:', FILEPATH__USER);
     }
 };
 
